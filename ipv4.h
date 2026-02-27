@@ -7,28 +7,36 @@
 #include "icmpv4.h"
 using namespace std;
 
-int versionIhl(char *c)
+int versionIhl(char *binaryHeader)
 {
-    string s;
-    stringstream ss, ss2;
+    string versionString;
+    stringstream versionStream, ihlStream;
     int n;
-    char *cc;
+    char *parseEndPtr;
+    
     for(int i=0; i<4; i++)
     {
-        ss<<c[i];
+        versionStream<<binaryHeader[i];
     }
-    s=ss.str();
-    n=strtoull(s.c_str(), &cc, 2);
-    cout<<"Version: "<<n<<" ("<<s<<")"<<" -> IPV4";
+    
+    versionString=versionStream.str();
+    n=strtoull(versionString.c_str(), &parseEndPtr, 2);
+    
+    cout<<"Version: "<<n<<" ("<<versionString<<")"<<" -> IPV4";
+    
     for(int i=4; i<8; i++)
     {
-        ss2<<c[i];
+        ihlStream<<binaryHeader[i];
     }
-    s=ss2.str();
-    n=strtoull(s.c_str(), &cc, 2);
+    
+    versionString=ihlStream.str();
+    n=strtoull(versionString.c_str(), &parseEndPtr, 2);
+    
     cout<<endl<<"IHL: "<<n<<" ("<<n*4<<")";
+    
     return n*4;
 }
+
 void dscpEcn(char *c)
 {
     string s;

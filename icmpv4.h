@@ -6,98 +6,128 @@
 
 using namespace std;
 
-void icmp4 (char *c,int t)
+void icmp4 (char *fileName,int ipPayloadLength)
 {
-    int ident;
-    int tam;
-    unsigned char * ch;
-    ifstream ar (c, ios::in|ios::binary);
-    if(!ar.is_open())
+    int icmpCategory;
+    int bytesToRead;
+    unsigned char * buffer;
+
+    ifstream inputFile (fileName, ios::in|ios::binary);
+    
+    if(!inputFile.is_open())
     {
         cout<<endl<<"Error."<<endl;
     }else
     {
         cout<<endl<<endl<<"                ICMPV4                 "<<endl;
-        string s;
+        
+        string typeCodeString;
+        
         ///----------------TYPE, CODE-----------------------
-        tam=2;
-        ch = new unsigned char [tam];
-        ar.seekg (34, ios::beg);
-        ar.read ((char*)ch, tam);
-        char *bin, *cc;
-        stringstream ss;
-        ss<<(int)ch[0];
-        if((int)ch[0]==3||(int)ch[0]==5||(int)ch[0]==11)
+        bytesToRead=2;
+        buffer = new unsigned char [bytesToRead];
+        
+        inputFile.seekg (34, ios::beg);
+        inputFile.read ((char*)buffer, bytesToRead);
+        
+        char *binaryByte, *parseEndPtr;
+        stringstream typeCodeStringStream;
+        
+        typeCodeStringStream<<(int)buffer[0];
+        
+        if((int)buffer[0]==3||(int)buffer[0]==5||(int)buffer[0]==11)
         {
-            ss<<"-"<<(int)ch[1];
+            typeCodeStringStream<<"-"<<(int)buffer[1];
         }else{
-            ss<<"-0";
+            typeCodeStringStream<<"-0";
         }
-        s=ss.str();
-        ident=verificarIcmp4(s);
+        
+        typeCodeString=typeCodeStringStream.str();
+        icmpCategory=verificarIcmp4(typeCodeString);
+        
         ///---------------Checksum----------------------------
-        tam=2;
-        ar.seekg (36, ios::beg);
-        ar.read ((char*)ch, tam);
-        stringstream sss;
-        sss<<hex<<setw(2)<<setfill('0')<<(int)ch[0];
-        sss<<hex<<setw(2)<<setfill('0')<<(int)ch[1];
-        s="0x"+sss.str();
-        cout<<endl<<"Header Checksum: "<<s;
-        if(ident==0||ident==8)
+        bytesToRead=2;
+        inputFile.seekg (36, ios::beg);
+        inputFile.read ((char*)buffer, bytesToRead);
+
+        stringstream checksumStream;
+
+        checksumStream<<hex<<setw(2)<<setfill('0')<<(int)buffer[0];
+        checksumStream<<hex<<setw(2)<<setfill('0')<<(int)buffer[1];
+        
+        typeCodeString="0x"+checksumStream.str();
+        cout<<endl<<"Header Checksum: "<<typeCodeString;
+        
+        if(icmpCategory==0||icmpCategory==8)
         {
             ///--------------Identificador-------------------------
-            tam=2;
-            ar.seekg (38, ios::beg);
-            ar.read ((char*)ch, tam);
+            bytesToRead=2;
+            inputFile.seekg (38, ios::beg);
+            inputFile.read ((char*)buffer, bytesToRead);
+            
             long int n;
-            stringstream z;
-            bin=chartobin(ch[0]);
-            z<<bin;
-            bin=chartobin(ch[1]);
-            z<<bin;
-            s=z.str();
-            n=strtoull(s.c_str(), &cc, 2);
+            stringstream identifierStream;
+            
+            binaryByte=chartobin(buffer[0]);
+            identifierStream<<binaryByte;
+            
+            binaryByte=chartobin(buffer[1]);
+            identifierStream<<binaryByte;
+            
+            typeCodeString=identifierStream.str();
+            n=strtoull(typeCodeString.c_str(), &parseEndPtr, 2);
+           
             cout<<endl<<"Identificador: "<<n;
+            
             ///--------------Secuencia------------------------------
-            tam=2;
-            ar.seekg (40, ios::beg);
-            ar.read ((char*)ch, tam);
-            stringstream z2;
-            bin=chartobin(ch[0]);
-            z2<<bin;
-            bin=chartobin(ch[1]);
-            z2<<bin;
-            s=z2.str();
-            n=strtoull(s.c_str(), &cc, 2);
+            bytesToRead=2;
+            inputFile.seekg (40, ios::beg);
+            inputFile.read ((char*)buffer, bytesToRead);
+            
+            stringstream sequenceStream;
+            
+            binaryByte=chartobin(buffer[0]);
+            sequenceStream<<binaryByte;
+            
+            binaryByte=chartobin(buffer[1]);
+            sequenceStream<<binaryByte;
+            
+            typeCodeString=sequenceStream.str();
+            n=strtoull(typeCodeString.c_str(), &parseEndPtr, 2);
+            
             cout<<endl<<"Numero de Secuencia: "<<n;
+            
             ///------------------Payload-----------------------------
-            cout<<endl<<"Payload Lenght: "<<t-8;
-        }else if(ident==3)
+            cout<<endl<<"Payload Lenght: "<<ipPayloadLength-8;
+        }else if(icmpCategory==3)
         {
-            cout<<endl<<"Payload Lenght: "<<t-4;
-        }else if(ident==5)
+            cout<<endl<<"Payload Lenght: "<<ipPayloadLength-4;
+        }else if(icmpCategory==5)
         {
             ///--------------Gateway---------------------------------
-            tam=4;
-            ar.seekg (38, ios::beg);
-            ar.read ((char*)ch, tam);
+            bytesToRead=4;
+            inputFile.seekg (38, ios::beg);
+            inputFile.read ((char*)buffer, bytesToRead);
+            
             cout<<endl<<"Gateway: ";
+            
             for(int j=0; j<4; j++)
             {
-                printf("%d", (int)ch[j]);
+                printf("%d", (int)buffer[j]);
                 if(j<3)
                 {
                     cout<<".";
                 }
             }
+            
             ///------------Payload------------------------------------
-            cout<<endl<<"Payload Lenght: "<<t-8;
-        }else if(ident==1)
+            cout<<endl<<"Payload Lenght: "<<ipPayloadLength-8;
+        }else if(icmpCategory==1)
         {
-            cout<<endl<<"Payload Lenght: "<<t-4;
+            cout<<endl<<"Payload Lenght: "<<ipPayloadLength-4;
         }
 
     }
 }
+
 #endif // ICMP_H_INCLUDED
