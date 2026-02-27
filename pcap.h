@@ -3,6 +3,7 @@
 #include <pcap.h>
 #include <iostream>
 using namespace std;
+
 int pcap()
 {
     char *dev;
