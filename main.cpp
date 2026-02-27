@@ -13,81 +13,91 @@ using namespace std;
 
 int main()
 {
-    char e[30];
-    int t;
-    bool v=false;
-    cout<<endl<<"Ingrese Nombre de Paquete: ";
-    cin>>e;
+    char userInput[30];
+    int fileNameLength;
+    bool hasBinExtension=false;
+    cout<<endl<<"Ingrese Nombre de Paquete (Insert name File): ";
+    cin>>userInput;
     cout<<endl;
     ///Agregar el .bin
-    string ee(e);
-    t=ee.size();
-    if(ee[t-4]=='.')
+    //Adding .bin
+    string fileNameStr(userInput);
+    fileNameLength=fileNameStr.size();
+    
+    if(fileNameStr[fileNameLength-4]=='.')
     {
-        if(ee[t-3]=='b')
+        if(fileNameStr[fileNameLength-3]=='b')
         {
-            if(ee[t-2]=='i')
+            if(fileNameStr[fileNameLength-2]=='i')
             {
-                v=true;
+                hasBinExtension=true;
             }
         }
     }
-    if(!v)
+    
+    if(!hasBinExtension)
     {
-        ee.append(".bin");
+        fileNameStr.append(".bin");
     }
-    strncpy(e, ee.c_str(), sizeof(e));
-    e[sizeof(e) - 1] = 0;
-    ifstream ar (e);
-    if(!ar.is_open())
+    
+    strncpy(userInput, fileNameStr.c_str(), sizeof(userInput));
+    userInput[sizeof(userInput) - 1] = 0;
+    ifstream inputFile (userInput);
+    
+    if(!inputFile.is_open())
     {
         cout<<endl<<"Error.";
     }else
     {
         ///------------ETHERNET-----------------------------
-        ifstream ar (e);
-        int in,fn,t;
-        string s;
-        in= ar.tellg();
-        ar.seekg (0, ios::end);
-        fn= ar.tellg();
-        t=fn-in-18;
-        ar.seekg (0);
-        //mostrarbin(e);
-        cout<<"Tamano Paquete: "<<fn<<endl;
+        ifstream inputFile (userInput);
+        int fileStartPosition,fileEndPosition,payloadSize;
+        string etherType;
+        fileStartPosition= inputFile.tellg();
+        inputFile.seekg (0, ios::end);
+        fileEndPosition= inputFile.tellg();
+        payloadSize=fileEndPosition-fileStartPosition-18;
+        inputFile.seekg (0);
+        
+        cout<<"Tamano Paquete: "<<fileEndPosition<<endl;
         ///direcciones
-        direcciones(e);
+        //adresses
+        direcciones(userInput);
         ///tipo
-        s=tipo(e);
+        //type
+        etherType=tipo(userInput);
         ///Carga util
-        cout<<endl<<"Hay "<<t<<" Bytes de carga util.";
+        //Useful load
+        cout<<endl<<"Hay "<<payloadSize<<" Bytes de carga util.";
         ///crc
-        crc(e, t);
+        crc(userInput, payloadSize);
         cout<<endl;
+        
         for(int i=0; i<100; i++)
         {
-            if(dEthertype[i]==s)
+            if(dEthertype[i]==etherType)
             {
                 if(dEthertype[i+2]=="ARP")
                 {
                     ///------------ARP----------------------------------
-                    arp(e);
+                    arp(userInput);
                 }
                 if(dEthertype[i+2]=="IPV4")
                 {
                     ///------------IPV4----------------------------------
-                    ipv4(e);
+                    ipv4(userInput);
                 }
                 if(dEthertype[i+2]=="IPV6")
                 {
                     ///------------IPV6----------------------------------
-                    ipv6(e);
+                    ipv6(userInput);
                 }
             }
         }
-        //int pca;
-        //pca=pcap();
+
     }
-    ar.close();
+
+    inputFile.close();
+
     return 0;
 }
