@@ -15,6 +15,7 @@ void imprimir(char c)
     {
         putchar( (c & (1 << i)) ? '1' : '0' );
     }
+
     putchar('\n');
 }
 
@@ -52,37 +53,41 @@ void cast (char *c)
     {
         cout<<" Es Multicast";
     }
+
     if(c[7]=='0')
     {
         cout<<" Es Unicast ";
     }
 }
 
-void direcciones (char *c)
+void direcciones (char *binaryHead)
 {
-    int tam;
-    tam=6;
-    unsigned char * ch;
-    ifstream ar (c, ios::in|ios::binary);
-    if(!ar.is_open())
+    int size;
+    size=6;
+    
+    unsigned char * buffer;
+    ifstream file (binaryHead, ios::in|ios::binary);
+    
+    if(!file.is_open())
     {
         cout<<endl<<"Error."<<endl;
     }else
     {
-        ch = new unsigned char [tam];
-        ar.seekg (0, ios::beg);
-        ar.read ((char*)ch, tam);
+        buffer = new unsigned char [size];
+        file.seekg (0, ios::beg);
+        file.read ((char*)buffer, size);
 
         char *bin;
+        
         //----------------Destino----------------------------------------------------------
         cout<<"Direccion Destino: ";
         for(int j=0; j<6; j++)
         {
             if(j==0)
             {
-                bin=chartobin(ch[j]);
+                bin=chartobin(buffer[j]);
             }
-            printf("%02x", (int)ch[j]);
+            printf("%02x", (int)buffer[j]);
             if(j==5)
             {
                 cout<<" ->";
@@ -91,19 +96,22 @@ void direcciones (char *c)
                 cout<<":";
             }
         }
+
         cast(bin);
+
         //--------------Origen--------------------------------------------------------------
         cout<<endl;
-        ar.seekg (6, ios::beg);
-        ar.read ((char*)ch, tam);
+        file.seekg (6, ios::beg);
+        file.read ((char*)buffer, size);
+        
         cout<<"Direccion Origen: ";
         for(int j=0; j<6; j++)
         {
             if(j==0)
             {
-                bin=chartobin(ch[j]);
+                bin=chartobin(buffer[j]);
             }
-            printf("%02x", (int)ch[j]);
+            printf("%02x", (int)buffer[j]);
             if(j==5)
             {
                 cout<<" ->";
@@ -112,112 +120,143 @@ void direcciones (char *c)
                 cout<<":";
             }
         }
+
         cast(bin);
-        delete[] ch;
+        
+        delete[] buffer;
     }
-    ar.close();
+
+    file.close();
 }
 
-void mac (char *c)
+void mac (char *binaryHead)
 {
-    ifstream::pos_type size;
-    unsigned char * memblock;
-    ifstream file (c, ios::in|ios::binary|ios::ate);
+    ifstream::pos_type fileSize;
+    unsigned char * fileBuffer;
+    
+    ifstream file (binaryHead, ios::in|ios::binary|ios::ate);
+    
     if (file.is_open())
     {
-        size = file.tellg();
-        memblock = new unsigned char [size];
+        fileSize = file.tellg();
+        fileBuffer = new unsigned char [fileSize];
+        
         file.seekg (0, ios::beg);
-        file.read ((char*)memblock, size);
+        file.read ((char*)fileBuffer, fileSize);
 
-        for (int l=0; l<size; l++){
-            //cout << (int)memblock[l]<<endl;
-            printf("%x", (int)memblock[l]);
+        for (int l=0; l<fileSize; l++){
+            //cout << (int)fileBuffer[l]<<endl;
+            printf("%x", (int)fileBuffer[l]);
         }
 
         file.close();
+        delete[] fileBuffer;
 
-
-        delete[] memblock;
     }else
     {
         cout<<endl<<"Error."<<endl;
     }
 }
-void mostrarbin(char *c)
+
+void mostrarbin(char *binaryHead)
 {
-    char re;
+    char currentByte;
     char *bin;
-    int con=0;
-    ifstream ar(c);
-    if(!ar.is_open())
+    int byteCounter=0;
+    
+    ifstream inputFile(binaryHead);
+    
+    if(!inputFile.is_open())
     {
         cout<<endl<<"Error."<<endl;
     }else
     {
-        while(!ar.eof())
+        while(!inputFile.eof())
         {
-            if(ar.eof())
+            if(inputFile.eof())
             {
                 break;
             }
-            ar.get(re);
-            bin=chartobin(re);
+            
+            inputFile.get(currentByte);
+            bin=chartobin(currentByte);
+            
             cout<<bin<<endl;
-            con++;
+            byteCounter++;
         }
-        cout<<endl<<con<<endl;
+
+        cout<<endl<<byteCounter<<endl;
+
     }
-    ar.close();
+
+    inputFile.close();
 }
-string tipo(char *c)
+
+string tipo(char *binaryHead)
 {
-    int tam;
-    tam=2;
-    unsigned char * ch;
-    ifstream ar (c, ios::in|ios::binary);
-    if (ar.is_open())
+    int size;
+    size=2;
+    unsigned char * buffer;
+    
+    ifstream inputFile (binaryHead, ios::in|ios::binary);
+    
+    if (inputFile.is_open())
     {
-        ch = new unsigned char [tam];
-        ar.seekg (12, ios::beg);
-        ar.read ((char*)ch, tam);
-        string s;
-        stringstream ss;
-        ss<<hex<<setw(2)<<setfill('0')<<(int)ch[0];
-        ss<<hex<<setw(2)<<setfill('0')<<(int)ch[1];
-        s="0x"+ss.str();
+        buffer = new unsigned char [size];
+
+        inputFile.seekg (12, ios::beg);
+        inputFile.read ((char*)buffer, size);
+
+        string hexString;
+        stringstream hexStream;
+
+        hexStream<<hex<<setw(2)<<setfill('0')<<(int)buffer[0];
+        hexStream<<hex<<setw(2)<<setfill('0')<<(int)buffer[1];
+        
+        hexString="0x"+hexStream.str();
+        
         cout<<endl<<"Tipo: ";
-        verificardE(s);
+        verificardE(hexString);
+        
         //printf("\nTipo: 0x%02x%02x", (int)ch[0], (int)ch[1]);
-        delete[] ch;
-        ar.close();
-        return s;
+        delete[] buffer;
+        inputFile.close();
+
+        return hexString;
     }else
     {
         cout<<endl<<"Error."<<endl;
         return "error";
     }
-    ar.close();
+
+    inputFile.close();
     return "...";
 }
-void crc(char *c, int t)
+
+void crc(char *binaryHead, int payloadLength)
 {
-    int tam;
-    tam=4;
-    unsigned char * ch;
-    ifstream ar (c, ios::in|ios::binary);
-    if (ar.is_open())
+    int size;
+    size=4;
+    unsigned char * buffer;
+    
+    ifstream inputFile (binaryHead, ios::in|ios::binary);
+    
+    if (inputFile.is_open())
     {
-        ch = new unsigned char [tam];
-        ar.seekg (t+14, ios::beg);
-        ar.read ((char*)ch, tam);
-        printf("\nCRC: 0x%02x%02x%02x%02x", (int)ch[0], (int)ch[1], (int)ch[2], (int)ch[3]);
-        delete[] ch;
+        buffer = new unsigned char [size];
+        
+        inputFile.seekg (payloadLength+14, ios::beg);
+        inputFile.read ((char*)buffer, size);
+        
+        printf("\nCRC: 0x%02x%02x%02x%02x", (int)buffer[0], (int)buffer[1], (int)buffer[2], (int)buffer[3]);
+        
+        delete[] buffer;
     }else
     {
         cout<<endl<<"Error."<<endl;
     }
-    ar.close();
+    
+    inputFile.close();
 }
 
 #endif // FUNCIONES_H_INCLUDED

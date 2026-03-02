@@ -37,27 +37,32 @@ int versionIhl(char *binaryHeader)
     return n*4;
 }
 
-void dscpEcn(char *c)
+void dscpEcn(char *binaryHeader)
 {
-    string s;
-    stringstream ss, ss2;
+    string bitString;
+    stringstream bitStream;
     int n;
-    char *cc;
+    char *parseEndPtr;
+    
     for(int i=0; i<6; i++)
     {
-        ss<<c[i];
+        bitStream<<binaryHeader[i];
     }
-    s=ss.str();
-    n=strtoull(s.c_str(), &cc, 2);
+    
+    bitString=bitStream.str();
+    n=strtoull(bitString.c_str(), &parseEndPtr, 2);
+    
     cout<<endl<<"DSCP: "<<n;
-    if(c[6]=='1')
+    
+    if(binaryHeader[6]=='1')
     {
         cout<<endl<<"ECN bit 1: ON";
     }else
     {
         cout<<endl<<"ECN bit 1: OFF";
     }
-    if(c[7]=='1')
+
+    if(binaryHeader[7]=='1')
     {
         cout<<endl<<"ECN bit 2: ON";
     }else
@@ -65,23 +70,26 @@ void dscpEcn(char *c)
         cout<<endl<<"ECN bit 2: OFF";
     }
 }
-void flags (char *c)
+
+void flags (char *binaryHeader)
 {
-    if(c[0]=='1')
+    if(binaryHeader[0]=='1')
     {
         cout<<endl<<"MSB Reservado: ON";
     }else
     {
         cout<<endl<<"MSB Reservado: OFF";
     }
-    if(c[1]=='1')
+
+    if(binaryHeader[1]=='1')
     {
         cout<<endl<<"More Fragments: ON";
     }else
     {
         cout<<endl<<"More Fragments: OFF";
     }
-    if(c[2]=='1')
+
+    if(binaryHeader[2]=='1')
     {
         cout<<endl<<"Dont Fragments: ON";
     }else
@@ -89,157 +97,201 @@ void flags (char *c)
         cout<<endl<<"Dont Fragments: OFF";
     }
 }
-void fragmetsOffset(char *c, char *c2)
+
+void fragmetsOffset(char *flagsBits, char *offsetBits)
 {
-    string s;
-    stringstream ss, ss2;
+    string bitString;
+    stringstream flagsStream, offsetStream;
     int n, n2;
-    char *cc;
+    char *endPtr;
+    
     for(int i=3; i<8; i++)
     {
-        ss<<c[i];
+        flagsStream<<flagsBits[i];
     }
-    s=ss.str();
-    n=strtoull(s.c_str(), &cc, 2);
+    
+    bitString=flagsStream.str();
+    n=strtoull(bitString.c_str(), &endPtr, 2);
+    
     for(int i=0; i<8; i++)
     {
-        ss2<<c2[i];
+        offsetStream<<offsetBits[i];
     }
-    s=ss.str();
-    n2=strtoull(s.c_str(), &cc, 2);
+    
+    bitString=flagsStream.str();
+    n2=strtoull(bitString.c_str(), &endPtr, 2);
+    
     cout<<endl<<"Fragment Offset: "<<n+n2;
 }
-void identificar(int n, char *c, int t)
+
+void identificar(int protocolNumber, char *filePath, int payloadLength)
 {
-    if(n==1)
+    if(protocolNumber==1)
     {
-        icmp4(c,t);
-    }else if(n==6)
+        icmp4(filePath,payloadLength);
+    }else if(protocolNumber==6)
     {
         //tcp(c);
     }
 }
 
-void ipv4(char *c)
+void ipv4(char *filePath)
 {
-    int tam;
-    unsigned char * ch;
-    ifstream ar (c, ios::in|ios::binary);
-    if(!ar.is_open())
+    int size;
+    unsigned char * buffer;
+    ifstream file (filePath, ios::in|ios::binary);
+    
+    if(!file.is_open())
     {
         cout<<endl<<"Error."<<endl;
     }else
     {
         cout<<endl<<"                IPV4                 "<<endl;
-        char *bin, *bin2;
+        
+        char *binaryByte1, *binaryByte2;
+        
         ///-------MSB Y LSB----------------
-        tam=1;
-        int ihl;
-        ch = new unsigned char [tam];
-        ar.seekg (14, ios::beg);
-        ar.read ((char*)ch, tam);
-        bin=chartobin(ch[0]);
-        ihl=versionIhl(bin);
+        size=1;
+        int headerLength;
+        buffer = new unsigned char [size];
+        
+        file.seekg (14, ios::beg);
+        file.read ((char*)buffer, size);
+        
+        binaryByte1=chartobin(buffer[0]);
+        headerLength=versionIhl(binaryByte1);
+        
         ///-------DSCP Y ECN---------------
-        tam=1;
-        ar.seekg (15, ios::beg);
-        ar.read ((char*)ch, tam);
-        bin=chartobin(ch[0]);
-        dscpEcn(bin);
+        size=1;
+        file.seekg (15, ios::beg);
+        file.read ((char*)buffer, size);
+        
+        binaryByte1=chartobin(buffer[0]);
+        dscpEcn(binaryByte1);
+        
         ///-------Total Lenght-------------
-        tam=2;
-        ar.seekg (16, ios::beg);
-        ar.read ((char*)ch, tam);
-        string s;
-        long int n;
-        stringstream z;
-        char *cc;
-        bin=chartobin(ch[0]);
-        z<<bin;
-        bin=chartobin(ch[1]);
-        z<<bin;
-        s=z.str();
-        n=strtoull(s.c_str(), &cc, 2);
-        cout<<endl<<"Total Lenght: "<<n-ihl;
-        int t=n-ihl;
+        size=2;
+        file.seekg (16, ios::beg);
+        file.read ((char*)buffer, size);
+        
+        string bitString;
+        long int totalLength;
+        stringstream bitStream;
+        char *endPtr;
+        
+        binaryByte1=chartobin(buffer[0]);
+        bitStream<<binaryByte1;
+        binaryByte1=chartobin(buffer[1]);
+        bitStream<<binaryByte1;
+        bitString=bitStream.str();
+        totalLength=strtoull(bitString.c_str(), &endPtr, 2);
+        
+        cout<<endl<<"Total Lenght: "<<totalLength-headerLength;
+        
+        int payloadLength=totalLength-headerLength;
+        
         ///------Identification------------
-        tam=2;
-        ar.seekg (18, ios::beg);
-        ar.read ((char*)ch, tam);
-        stringstream z2;
-        bin=chartobin(ch[0]);
-        z2<<bin;
-        bin=chartobin(ch[1]);
-        z2<<bin;
-        s=z2.str();
-        n=strtoull(s.c_str(), &cc, 2);
-        cout<<endl<<"Identification: "<<n;
+        size=2;
+        file.seekg (18, ios::beg);
+        file.read ((char*)buffer, size);
+        
+        stringstream identificationStream;
+        binaryByte1=chartobin(buffer[0]);
+        identificationStream<<binaryByte1;
+        binaryByte1=chartobin(buffer[1]);
+        identificationStream<<binaryByte1;
+        
+        bitString=identificationStream.str();
+        totalLength=strtoull(bitString.c_str(), &endPtr, 2);
+        
+        cout<<endl<<"Identification: "<<totalLength;
+        
         ///---------FLAGS-------------------
-        tam=1;
-        ar.seekg (20, ios::beg);
-        ar.read ((char*)ch, tam);
-        bin=chartobin(ch[0]);
-        flags(bin);
+        size=1;
+        file.seekg (20, ios::beg);
+        file.read ((char*)buffer, size);
+        
+        binaryByte1=chartobin(buffer[0]);
+        flags(binaryByte1);
+        
         ///---------Fragment Offset---------
-        tam=2;
-        ar.seekg (20, ios::beg);
-        ar.read ((char*)ch, tam);
-        bin=chartobin(ch[0]);
-        bin2=chartobin(ch[1]);
-        fragmetsOffset(bin, bin2);
+        size=2;
+        file.seekg (20, ios::beg);
+        file.read ((char*)buffer, size);
+        
+        binaryByte1=chartobin(buffer[0]);
+        binaryByte2=chartobin(buffer[1]);
+        fragmetsOffset(binaryByte1, binaryByte2);
+        
         ///----------Time To Life-----------
-        tam=1;
-        ar.seekg (22, ios::beg);
-        ar.read ((char*)ch, tam);
-        cout<<endl<<"Time to life: "<<(int)ch[0];
+        size=1;
+        file.seekg (22, ios::beg);
+        file.read ((char*)buffer, size);
+        
+        cout<<endl<<"Time to life: "<<(int)buffer[0];
+        
         ///---------Protocol----------------
-        int num;
-        tam=1;
-        ar.seekg (23, ios::beg);
-        ar.read ((char*)ch, tam);
-        stringstream ss;
-        ss<<(int)ch[0];
-        s=ss.str();
-        num=verificarIPT(s);
+        int protocolNumber;
+        size=1;
+        file.seekg (23, ios::beg);
+        file.read ((char*)buffer, size);
+        
+        stringstream protocolStream;
+        protocolStream<<(int)buffer[0];
+        bitString=protocolStream.str();
+        
+        protocolNumber=verificarIPT(bitString);
+        
         ///--------Header Checksum----------
-        tam=2;
-        ar.seekg (24, ios::beg);
-        ar.read ((char*)ch, tam);
-        stringstream sss;
-        sss<<hex<<setw(2)<<setfill('0')<<(int)ch[0];
-        sss<<hex<<setw(2)<<setfill('0')<<(int)ch[1];
-        s="0x"+sss.str();
-        cout<<endl<<"Header Checksum: "<<s;
+        size=2;
+        file.seekg (24, ios::beg);
+        file.read ((char*)buffer, size);
+        
+        stringstream checksumStream;
+        checksumStream<<hex<<setw(2)<<setfill('0')<<(int)buffer[0];
+        checksumStream<<hex<<setw(2)<<setfill('0')<<(int)buffer[1];
+       
+        bitString="0x"+checksumStream.str();
+        cout<<endl<<"Header Checksum: "<<bitString;
+        
         ///---------Direccion Origen-----------
-        tam=4;
-        ar.seekg (26, ios::beg);
-        ar.read ((char*)ch, tam);
+        size=4;
+        file.seekg (26, ios::beg);
+        file.read ((char*)buffer, size);
+        
         cout<<endl<<"Sender IP: ";
+        
         for(int j=0; j<4; j++)
         {
-            printf("%d", (int)ch[j]);
+            printf("%d", (int)buffer[j]);
             if(j<3)
             {
                 cout<<".";
             }
         }
+
         ///---------Direccion Destino----------
-        tam=4;
-        ar.seekg (30, ios::beg);
-        ar.read ((char*)ch, tam);
+        size=4;
+        file.seekg (30, ios::beg);
+        file.read ((char*)buffer, size);
+        
         cout<<endl<<"Tarjet IP: ";
+        
         for(int j=0; j<4; j++)
         {
-            printf("%d", (int)ch[j]);
+            printf("%d", (int)buffer[j]);
             if(j<3)
             {
                 cout<<".";
             }
         }
+
         ///-----------Data----------------------
-        identificar(num, c,t);
+        identificar(protocolNumber, filePath,payloadLength);
     }
-    delete[] ch;
-    ar.close();
+    
+    delete[] buffer;
+    file.close();
 }
+
 #endif // IPV4_H_INCLUDED
